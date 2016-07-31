@@ -1,4 +1,6 @@
-﻿using UnityEngine;
+﻿#define FINALIK
+
+using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System;
@@ -10,6 +12,7 @@ namespace CpvrLab.AVRtar
     {
         private Dictionary<HumanBodyBones, Transform> _fingerCopies = new Dictionary<HumanBodyBones, Transform>();
         private Animator _animator;
+        private bool useFinalIK = false;
 
         [MenuItem("LeapMotion/Avatar Setup")]
         public static void ShowWindow()
@@ -19,7 +22,22 @@ namespace CpvrLab.AVRtar
 
         void OnGUI()
         {
+            var style = new GUIStyle(GUI.skin.label);
+            style.fontSize = 18;
+            style.fixedHeight = 25.0f;
+            
+            EditorGUILayout.LabelField("Humanoid to AVRtar Setup", style, GUILayout.Height(style.fixedHeight));
+            
+
+#if FINALIK
+            EditorGUILayout.BeginHorizontal();
+            EditorGUILayout.LabelField("Use FinalIK", GUILayout.Width(80.0f));
+            useFinalIK = EditorGUILayout.Toggle(useFinalIK, GUILayout.ExpandWidth(true));
+            EditorGUILayout.EndHorizontal();
+#endif
+
             DropAreaGUI();
+
         }
 
         private void OnObjectDropped(GameObject go)
@@ -186,11 +204,14 @@ namespace CpvrLab.AVRtar
             // todo: actually spend a bit of time and make the gui look like something (nice)
             Color fontColor = Color.black;
             if (EditorGUIUtility.isProSkin)
-                fontColor = Color.white;
+                fontColor = Color.grey;
 
+            GUIStyle dropAreaStyle = new GUIStyle(GUI.skin.box);
+            dropAreaStyle.normal.textColor = fontColor;
+            dropAreaStyle.hover.textColor = Color.red;
 
-            var dropArea = GUILayoutUtility.GetRect(0.0f, 50.0f, GUILayout.ExpandWidth(true));
-            GUI.Box(dropArea, "Drop your custom humanoid model here");
+            var dropArea = GUILayoutUtility.GetRect(0.0f, 50.0f, GUILayout.ExpandWidth(true), GUILayout.ExpandHeight(true));
+            GUI.Box(dropArea, "Drop your custom humanoid model here", dropAreaStyle);
 
             switch (evt.type)
             {
