@@ -5,7 +5,8 @@ using System.Collections.Generic;
 using UnityEditor;
 #endif
 
-namespace CpvrLab.VirtualTable {
+namespace CpvrLab.AVRtar
+{
 
     public class VelocityInfo : MonoBehaviour {
 

@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
 using UnityEditor;
 
-namespace CpvrLab.VirtualTable {
+namespace CpvrLab.AVRtar
+{
     [CustomEditor(typeof(HandPoseMapper))]
     public class HandPoseMapperEditor : Editor {
 

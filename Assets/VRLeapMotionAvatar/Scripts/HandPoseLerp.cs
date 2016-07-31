@@ -1,7 +1,8 @@
 using UnityEngine;
 using System.Collections;
 
-namespace CpvrLab.VirtualTable {
+namespace CpvrLab.AVRtar
+{
 
     // lerps two transform trees together and copys the result on the current object
     public class HandPoseLerp : MonoBehaviour {

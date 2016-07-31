@@ -1,7 +1,8 @@
 ﻿using UnityEngine;
 using System.Collections;
 
-namespace CpvrLab.VirtualTable {
+namespace CpvrLab.AVRtar
+{
 
     /// <summary>
     /// This script has to be added to a biped character model to follow head rotation and movements

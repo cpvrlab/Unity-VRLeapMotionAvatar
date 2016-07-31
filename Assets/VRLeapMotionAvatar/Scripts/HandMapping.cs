@@ -2,7 +2,8 @@
 using System.Collections;
 using Leap;
 
-namespace CpvrLab.VirtualTable {
+namespace CpvrLab.AVRtar
+{
 
     public class HandMapping : MonoBehaviour {
 

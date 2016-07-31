@@ -1,7 +1,7 @@
 ﻿using UnityEngine;
 using Leap.Unity;
 
-namespace CpvrLab.VirtualTable
+namespace CpvrLab.AVRtar
 {
     /// <summary>
     /// Fade a hand pose between a leap hand model and a static hand model based

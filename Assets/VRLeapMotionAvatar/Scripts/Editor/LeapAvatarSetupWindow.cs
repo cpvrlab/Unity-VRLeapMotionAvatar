@@ -3,7 +3,8 @@ using UnityEditor;
 using System.Collections.Generic;
 using System;
 
-namespace CpvrLab.VirtualTable {
+namespace CpvrLab.AVRtar
+{
 
     class LeapAvatarSetupWindow : EditorWindow
     {
