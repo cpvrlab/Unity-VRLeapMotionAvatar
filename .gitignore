@@ -2,6 +2,8 @@
 Temp/
 Library/
 Build/
+Assets/ThirdParty/FinalIK
+Assets/ThirdParty/FinalIK.meta
 
 ExportedObj/
 obj/

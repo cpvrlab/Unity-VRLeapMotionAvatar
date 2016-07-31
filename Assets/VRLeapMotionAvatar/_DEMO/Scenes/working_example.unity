@@ -4338,8 +4338,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a47e9ee1cf31e0841b18c0f90dec8106, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rightHandGoal: {fileID: 64866922}
   leftHandGoal: {fileID: 478025385}
+  rightHandGoal: {fileID: 64866922}
+  leftHandPoser: {fileID: 1647824559}
+  rightHandPoser: {fileID: 1633735386}
   useFinalIK: 0
   leftHandForward: {x: 0, y: 1, z: 0}
   leftHandUp: {x: 0, y: 0, z: -1}
@@ -4406,6 +4408,31 @@ Prefab:
       objectReference: {fileID: 0}
     - target: {fileID: 4000010771102290, guid: 35a8a1edfe32dd14bbe18972c13777d5, type: 2}
       propertyPath: m_RootOrder
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114000012765730102, guid: 35a8a1edfe32dd14bbe18972c13777d5,
+        type: 2}
+      propertyPath: isLeft
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 114000012765730102, guid: 35a8a1edfe32dd14bbe18972c13777d5,
+        type: 2}
+      propertyPath: ikController
+      value: 
+      objectReference: {fileID: 2075228481}
+    - target: {fileID: 114000013459951008, guid: 35a8a1edfe32dd14bbe18972c13777d5,
+        type: 2}
+      propertyPath: ikController
+      value: 
+      objectReference: {fileID: 2075228481}
+    - target: {fileID: 114000012765730102, guid: 35a8a1edfe32dd14bbe18972c13777d5,
+        type: 2}
+      propertyPath: useRelaxHandGoals
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 114000013459951008, guid: 35a8a1edfe32dd14bbe18972c13777d5,
+        type: 2}
+      propertyPath: useRelaxHandGoals
       value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []

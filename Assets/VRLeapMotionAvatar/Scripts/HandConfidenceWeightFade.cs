@@ -13,6 +13,7 @@ namespace CpvrLab.AVRtar
         // animation curve managing hand tracking fade in interpolation
         public AnimationCurve fadeInCurve = AnimationCurve.EaseInOut(0.0f, 0.0f, 1.0f, 1.0f);
 
+        public bool isLeft;
         // fade to the relaxed hand state or fade out the ik goals completely
         public bool useRelaxHandGoals = true;
 
@@ -22,12 +23,15 @@ namespace CpvrLab.AVRtar
 
         public float fadeDuration = 0.5f;        
         public HandModel handModel;
+        public HandIKController ikController;
+
         private HandPoseLerp _handLerper;
         
         private float _timer = 0.0f;
         private float _timeFactor = 1.0f;
         private bool _fadeRunning;
         private FadeDir _fadeDir;
+        private float _currentWeight = 0.0f;
         private float _startWeight = 0.0f;
         private long _prevFrameId = -1;
         private float _currentFrameAge = 0.0f;
@@ -49,6 +53,11 @@ namespace CpvrLab.AVRtar
                 Debug.LogError("HandConfidenceWeightFade: Couldn't find a HandPoseLerp component attached!");
         }
         
+        protected virtual void Start()
+        {
+            SetWeight(_currentWeight);
+        }
+
         void UpdateCachedConfidence()
         {
             var leapHand = handModel.GetLeapHand();
@@ -90,11 +99,26 @@ namespace CpvrLab.AVRtar
             // start a new fade
             _timer = 0.0f;
             _timeFactor = 1.0f / fadeDuration; // we could calculate this only at the start but what if the user changes the duration
-            _startWeight = _handLerper.alpha;
+            _startWeight = _currentWeight;
             _fadeDir = dir;
             _fadeRunning = true;
         }
 
+        void SetWeight(float weight)
+        {
+            _currentWeight = weight;
+
+            if (useRelaxHandGoals)
+            {
+                ikController.SetHandWeight(isLeft, 1.0f);
+                _handLerper.alpha = weight;
+            }
+            else {
+                _handLerper.alpha = 1.0f;
+                ikController.SetHandWeight(isLeft, weight);
+            }
+            
+        }
 
         void Update()
         {
@@ -115,7 +139,7 @@ namespace CpvrLab.AVRtar
             float normalizedTime = _timer * _timeFactor;
             float value = fadeInCurve.Evaluate(normalizedTime);
 
-            _handLerper.alpha = Mathf.Lerp(_startWeight, (float)_fadeDir, value);
+            SetWeight(Mathf.Lerp(_startWeight, (float)_fadeDir, value));
 
             if (_timer >= fadeDuration)            
                 _fadeRunning = false;            
