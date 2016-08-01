@@ -1,4 +1,4 @@
-﻿#define FINALIK
+﻿//#define FINALIK
 
 using UnityEngine;
 using System.Collections;
@@ -33,7 +33,7 @@ namespace CpvrLab.AVRtar
         float _rightWeight;
 
 #if FINALIK
-        FullBodyBipedIK ik;
+        FullBodyBipedIK _ik;
 #endif
 
 
@@ -42,6 +42,10 @@ namespace CpvrLab.AVRtar
             _animator = GetComponent<Animator>();
             _rotationShiftL = Quaternion.LookRotation(leftHandForward.normalized, leftHandUp.normalized);
             _rotationShiftR = Quaternion.LookRotation(rightHandForward.normalized, rightHandUp.normalized);
+
+#if FINALIK
+            _ik = GetComponent<FullBodyBipedIK>();
+#endif
         }
 
         public void SetHandWeight(bool left, float weight)
@@ -65,12 +69,12 @@ namespace CpvrLab.AVRtar
 
                 if (left)
                 {
-                    ik.solver.leftHandEffector.positionWeight = weight;
-                    ik.solver.leftHandEffector.rotationWeight = weight;
+                    _ik.solver.leftHandEffector.positionWeight = weight;
+                    _ik.solver.leftHandEffector.rotationWeight = weight;
                 } else
                 {
-                    ik.solver.rightHandEffector.positionWeight = weight;
-                    ik.solver.rightHandEffector.rotationWeight = weight;
+                    _ik.solver.rightHandEffector.positionWeight = weight;
+                    _ik.solver.rightHandEffector.rotationWeight = weight;
                 }
             }
 #endif

@@ -1,9 +1,14 @@
-﻿#define FINALIK
+﻿//#define FINALIK
 
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
 using System;
+
+#if FINALIK
+using RootMotion;
+using RootMotion.FinalIK;
+#endif
 
 namespace CpvrLab.AVRtar
 {
@@ -13,6 +18,7 @@ namespace CpvrLab.AVRtar
         private Dictionary<HumanBodyBones, Transform> _fingerCopies = new Dictionary<HumanBodyBones, Transform>();
         private Animator _animator;
         private bool useFinalIK = false;
+        private Transform _containerObject = null;
 
         [MenuItem("LeapMotion/Avatar Setup")]
         public static void ShowWindow()
@@ -40,10 +46,131 @@ namespace CpvrLab.AVRtar
 
         }
 
+        // calculate plane normal given three world positions
+        private Vector3 calculatePlaneNormal(Vector3 a, Vector3 b, Vector3 c, bool invert = false)
+        {
+            Vector3 ab = b - a;
+            Vector3 ac = c - a;
+
+            Vector3 cross = Vector3.Cross(ab, ac);
+            if (invert)
+                cross *= -1;
+
+            return cross.normalized;
+        }
+
+        // returns bend direction of a three transform chain
+        Vector3 GetChainBendDirection(HumanBodyBones b0, HumanBodyBones b1, HumanBodyBones b2)
+        {
+            Transform t0 = _animator.GetBoneTransform(b0);
+            Transform t1 = _animator.GetBoneTransform(b1);
+            Transform t2 = _animator.GetBoneTransform(b2);
+
+            Vector3 cross = Vector3.Cross((t1.transform.position - t0.transform.position).normalized, (t2.transform.position - t0.transform.position).normalized);
+            return -Vector3.Cross(cross.normalized, (t2.transform.position - t0.transform.position).normalized);
+        }
+
+        void SetupIK(GameObject modelGO, GameObject leftHandGoal, GameObject rightHandGoal, HandPoser leftHandPoser, HandPoser rightHandPoser)
+        {
+            var ikController = modelGO.AddComponent<HandIKController>();
+            ikController.useFinalIK = useFinalIK;
+            ikController.leftHandGoal = leftHandGoal.transform;
+            ikController.rightHandGoal = rightHandGoal.transform;
+            ikController.leftHandPoser = leftHandPoser;
+            ikController.rightHandPoser = rightHandPoser;
+
+            if (!useFinalIK)
+                return;
+
+
+#if FINALIK
+
+            var fbbik = modelGO.AddComponent<FullBodyBipedIK>();
+            
+            // force auto detect of fbbik
+            if (fbbik.references.isEmpty)
+            {
+                BipedReferences.AutoDetectReferences(ref fbbik.references, fbbik.transform, new BipedReferences.AutoDetectParams(true, false));
+                fbbik.solver.rootNode = IKSolverFullBodyBiped.DetectRootNodeBone(fbbik.references);
+                fbbik.solver.SetToReferences(fbbik.references, fbbik.solver.rootNode);
+            }
+
+
+            Transform goalContainer = new GameObject("ik_goals").transform;
+            goalContainer.parent = _containerObject;
+
+            leftHandGoal.transform.parent = goalContainer;
+            rightHandGoal.transform.parent = goalContainer;
+
+            // Add pole targets for the knees
+            Transform elbowGoalLeft = CopyTransform(_animator.GetBoneTransform(HumanBodyBones.LeftLowerArm), "elbow_L").transform;
+            Transform elbowGoalRight = CopyTransform(_animator.GetBoneTransform(HumanBodyBones.RightLowerArm), "elbow_R").transform;
+
+            elbowGoalLeft.SetParent(goalContainer);
+            elbowGoalRight.SetParent(goalContainer);
+
+            // offset the goals in the bend direction of the arm
+            elbowGoalLeft.position = elbowGoalLeft.position + GetChainBendDirection(HumanBodyBones.LeftUpperArm, HumanBodyBones.LeftLowerArm, HumanBodyBones.LeftHand);
+            elbowGoalRight.position = elbowGoalRight.position + GetChainBendDirection(HumanBodyBones.RightUpperArm, HumanBodyBones.RightLowerArm, HumanBodyBones.RightHand);
+
+
+
+            fbbik.solver.leftArmChain.bendConstraint.bendGoal = elbowGoalLeft;
+            fbbik.solver.leftArmChain.bendConstraint.weight = 0.5f;
+            fbbik.solver.rightArmChain.bendConstraint.bendGoal = elbowGoalRight;
+            fbbik.solver.rightArmChain.bendConstraint.weight = 0.5f;
+
+
+            Transform kneeGoalLeft = CopyTransform(_animator.GetBoneTransform(HumanBodyBones.LeftLowerLeg), "knee_L").transform;
+            Transform kneeGoalRight = CopyTransform(_animator.GetBoneTransform(HumanBodyBones.RightLowerLeg), "knee_R").transform;
+
+            kneeGoalLeft.SetParent(goalContainer);
+            kneeGoalRight.SetParent(goalContainer);
+
+            // offset the goals in the bend direction of the arm
+            kneeGoalLeft.position = kneeGoalLeft.position + GetChainBendDirection(HumanBodyBones.LeftUpperLeg, HumanBodyBones.LeftLowerLeg, HumanBodyBones.LeftFoot);
+            kneeGoalRight.position = kneeGoalRight.position + GetChainBendDirection(HumanBodyBones.RightUpperLeg, HumanBodyBones.RightLowerLeg, HumanBodyBones.RightFoot);
+
+            fbbik.solver.leftLegChain.bendConstraint.bendGoal = kneeGoalLeft;
+            fbbik.solver.leftLegChain.bendConstraint.weight = 0.5f;
+            fbbik.solver.rightLegChain.bendConstraint.bendGoal = kneeGoalRight;
+            fbbik.solver.rightLegChain.bendConstraint.weight = 0.5f;
+
+            //
+            Transform footGoalLeft = CopyTransform(_animator.GetBoneTransform(HumanBodyBones.LeftFoot), "foot_L");
+            Transform footGoalRight = CopyTransform(_animator.GetBoneTransform(HumanBodyBones.RightFoot), "foot_R");
+
+            footGoalLeft.SetParent(goalContainer);
+            footGoalRight.SetParent(goalContainer);
+
+            // We set the target in the FBBIK but we leave the weights at zero for the feet.
+            fbbik.solver.SetEffectorWeights(FullBodyBipedEffector.LeftFoot, 0.0f, 0.0f);
+            fbbik.solver.leftFootEffector.target = footGoalLeft;
+            fbbik.solver.SetEffectorWeights(FullBodyBipedEffector.RightFoot, 0.0f, 0.0f);
+            fbbik.solver.rightFootEffector.target = footGoalRight;
+
+            // Setup head effector
+            Transform headEffector = CopyTransform(_animator.GetBoneTransform(HumanBodyBones.Head).transform, "headEffector");
+            headEffector.gameObject.AddComponent<FBBIKHeadEffector>().ik = fbbik;
+                        
+            headEffector.SetParent(goalContainer);
+
+            // Setup hand goals
+            fbbik.solver.leftHandEffector.target = leftHandGoal.transform;
+            fbbik.solver.leftHandEffector.positionWeight = 1.0f;
+            fbbik.solver.leftHandEffector.rotationWeight = 1.0f;
+
+            fbbik.solver.rightHandEffector.target = rightHandGoal.transform;
+            fbbik.solver.rightHandEffector.positionWeight = 1.0f;
+            fbbik.solver.rightHandEffector.rotationWeight = 1.0f;
+#endif
+        }
+        
         private void OnObjectDropped(GameObject go)
         {
             _animator = null;
             _fingerCopies.Clear();
+            _containerObject = null;
 
             GameObject modelInstance = Instantiate(go);
             _animator = modelInstance.GetComponent<Animator>();
@@ -54,6 +181,10 @@ namespace CpvrLab.AVRtar
                 return;
             }
 
+            // 1. Create container object
+            _containerObject = new GameObject(go.name + " Avatar").transform;
+            modelInstance.name = "model";
+            modelInstance.transform.parent = _containerObject;
 
             // 1. create model specific hand object by copying the models hands
             Transform leftHand = _animator.GetBoneTransform(HumanBodyBones.LeftHand);
@@ -62,14 +193,13 @@ namespace CpvrLab.AVRtar
             var leftHandCopy = CopyTransformTree(leftHand, "modelHand_L", RememberFingerCopies);
             var rightHandCopy = CopyTransformTree(rightHand, "modelHand_R", RememberFingerCopies);
 
-            // add the finalIK hand poser script to our model hands
-            // todo: add finalik/mecanim support
-            //var leftHandPoser = leftHand.gameObject.AddComponent<RootMotion.FinalIK.HandPoser>();
-            //leftHandPoser.weight = 1.0f;
-            //leftHandPoser.poseRoot = leftHandCopy;
-            //var rightHandPoser = rightHand.gameObject.AddComponent<RootMotion.FinalIK.HandPoser>();
-            //rightHandPoser.poseRoot = rightHandCopy;
-            //rightHandPoser.weight = 1.0f;
+            // add hand poser script
+            var leftHandPoser = leftHand.gameObject.AddComponent<HandPoser>();
+            leftHandPoser.weight = 1.0f;
+            leftHandPoser.poseRoot = leftHandCopy;
+            var rightHandPoser = rightHand.gameObject.AddComponent<HandPoser>();
+            rightHandPoser.poseRoot = rightHandCopy;
+            rightHandPoser.weight = 1.0f;
 
             // add in an extra transform (in case we need to move the model hand to better fit the leap hand)
             // for example, it can happen that the models hands are too high up relative to the actual leap hand position
@@ -85,6 +215,13 @@ namespace CpvrLab.AVRtar
 
             leftPalm.gameObject.AddComponent<DebugTransformTree>();
             rightPalm.gameObject.AddComponent<DebugTransformTree>();
+
+            leftPalm.parent = _containerObject;
+            rightPalm.parent = _containerObject;
+
+            // Setup IK
+            SetupIK(modelInstance, leftPalm.gameObject, rightPalm.gameObject, leftHandPoser, rightHandPoser);
+            
         }
 
         void SetupHandMapper(GameObject hand, bool isLeft)
@@ -250,3 +387,4 @@ namespace CpvrLab.AVRtar
     }
 
 }
+

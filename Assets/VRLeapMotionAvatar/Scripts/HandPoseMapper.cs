@@ -34,9 +34,7 @@ namespace CpvrLab.AVRtar
 
             AB.Normalize();
             AC.Normalize();
-
-            Debug.Log("Auto detecting palm direction " + AB + " " + AC);
-
+            
             palmDirection = Vector3.Cross(AB, AC).normalized;
             palmDirection = Quaternion.Inverse(palm.rotation) * palmDirection;
             if(invertPalm) palmDirection *= -1.0f;
